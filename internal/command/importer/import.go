@@ -23,11 +23,13 @@ import (
 // command config
 var config = struct {
 	TypeNames  []string
+	ToPkg      string
 	Output     string
 	TrimPrefix string
 	BuildTags  []string
 }{
 	TypeNames:  []string{},
+	ToPkg:      ".",
 	Output:     "",
 	TrimPrefix: "",
 	BuildTags:  []string{},
@@ -39,7 +41,8 @@ var Version string = "0.0.1"
 // Flags generate tool flags
 func Flags(set *pflag.FlagSet) {
 	set.StringSliceVarP(&config.TypeNames, "type", "t", config.TypeNames, "list of type names; must be set")
-	set.StringVarP(&config.Output, "output", "o", config.Output, "output file name; default srcdir/<type>_string.go")
+	set.StringVarP(&config.Output, "output", "o", config.Output, "output file name; default srcdir/<type>_import.go")
+	set.StringVar(&config.ToPkg, "to", config.ToPkg, "which package be imported, extract the package from this folder")
 	set.StringVarP(&config.TrimPrefix, "trimprefix", "p", config.TrimPrefix, "trim the `prefix` from the generated constant names")
 	set.StringSliceVar(&config.BuildTags, "tags", config.BuildTags, "comma-separated list of build tags to apply")
 }
@@ -78,7 +81,7 @@ func RunCommand(cmd *cobra.Command, args []string) {
 		dir = filepath.Dir(args[0])
 	}
 
-	g.parsePackage(args, tags)
+	g.parsePackage(config.ToPkg, args, tags)
 
 	_ = dir
 
@@ -165,14 +168,14 @@ type Package struct {
 
 // parsePackage analyzes the single package constructed from the patterns and tags.
 // parsePackage exits if there is an error.
-func (g *Generator) parsePackage(patterns []string, tags []string) {
+func (g *Generator) parsePackage(topkg string, patterns []string, tags []string) {
 	src := &packages.Config{
 		Mode:       packages.NeedName,
 		Dir:        ".",
 		BuildFlags: []string{fmt.Sprintf("-tags=%s", strings.Join(tags, " "))},
 		Tests:      false,
 	}
-	srcPkgs, err := packages.Load(src, ".")
+	srcPkgs, err := packages.Load(src, topkg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -239,9 +242,10 @@ func (g *Generator) generate(typeName string) {
 		}
 	}
 
-	if len(values) == 0 {
-		log.Fatalf("no values defined for type %s", typeName)
-	}
+	// if len(values) == 0 {
+	// 	log.Fatalf("no values defined for type %s", typeName)
+	// }
+
 	// We use stable sort so the lexically first name is chosen for equal elements.
 	sort.Stable(byValue(values))
 
