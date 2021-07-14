@@ -1,9 +1,7 @@
 package testdata
 
 // TestType test type comment 1
-// xxx
-// xxx2
-// xdxx4
+// second line comment
 type TestType int // comment 2
 
 const (
