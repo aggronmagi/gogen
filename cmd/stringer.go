@@ -22,16 +22,16 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/aggronmagi/gogen/internal/command/stringer"
 	"github.com/spf13/cobra"
 )
 
 // stringerCmd represents the stringer command
 var stringerCmd = &cobra.Command{
-	Use:   "stringer",
+	Use:   "stringer [flags] -t T [directory | files ]",
 	Short: "Stringer automate create fmt.Stringer interface",
-	Long: `copy from https://github.com/golang/tool/cmd/stringer.
+	Long: `Stringer automate create fmt.Stringer interface
+
 Copyright 2014 The Go Authors. All rights reserved.
 
 Stringer is a tool to automate the creation of methods that satisfy the fmt.Stringer
@@ -39,14 +39,20 @@ interface. Given the name of a (signed or unsigned) integer type T that has cons
 defined, stringer will create a new self-contained Go source file implementing
 	func (t T) String() string
 The file is created in the same package and directory as the package that defines T.
-It has helpful defaults designed for use with go generate.`,
+It has helpful defaults designed for use with go generate.
+
+For more information, see:
+	https://pkg.go.dev/golang.org/x/tools/cmd/stringer
+`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("stringer called")
+		stringer.RunCommand(cmd, args)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(stringerCmd)
+
+	stringer.Flags(stringerCmd.Flags())
 
 	// Here you will define your flags and configuration settings.
 

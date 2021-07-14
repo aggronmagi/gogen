@@ -22,28 +22,25 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/aggronmagi/gogen/internal/command/importer"
 	"github.com/spf13/cobra"
 )
 
 // importerCmd represents the importer command
 var importerCmd = &cobra.Command{
-	Use:   "importer",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:     "importer [flag] -t T ",
+	Short:   "importer automate import const value from another package",
+	Long:    `importer automate import const value from another package`,
+	Version: importer.Version,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("importer called")
+		importer.RunCommand(cmd, args)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(importerCmd)
+
+	importer.Flags(importerCmd.Flags())
 
 	// Here you will define your flags and configuration settings.
 
