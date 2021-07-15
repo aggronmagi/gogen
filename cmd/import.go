@@ -28,9 +28,9 @@ import (
 
 // importerCmd represents the importer command
 var importerCmd = &cobra.Command{
-	Use:     "importer [flag] -t T ",
-	Short:   "importer automate import const value from another package",
-	Long:    `importer automate import const value from another package`,
+	Use:     "import [flag] -t T ",
+	Short:   "import automate import const value from another package",
+	Long:    `import automate import const value from another package`,
 	Version: importer.Version,
 	Run: func(cmd *cobra.Command, args []string) {
 		importer.RunCommand(cmd, args)
