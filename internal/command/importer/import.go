@@ -26,12 +26,9 @@ var config = struct {
 	Output     string
 	TrimPrefix string
 	BuildTags  []string
+	NewFunc    bool
 }{
-	TypeNames:  []string{},
-	ToPkg:      ".",
-	Output:     "",
-	TrimPrefix: "",
-	BuildTags:  []string{},
+	ToPkg: ".",
 }
 
 // Version generate tool version
@@ -46,6 +43,7 @@ func Flags(set *pflag.FlagSet) {
 	set.StringVar(&config.ToPkg, "to", config.ToPkg, "which package be imported, extract the package from this folder")
 	set.StringVarP(&config.TrimPrefix, "trimprefix", "p", config.TrimPrefix, "trim the `prefix` from the generated constant names")
 	set.StringSliceVar(&config.BuildTags, "tags", config.BuildTags, "comma-separated list of build tags to apply")
+	set.BoolVar(&config.NewFunc, "new", false, "import type new functions")
 }
 
 // RunCommand run generate command
@@ -90,9 +88,10 @@ func RunCommand(cmd *cobra.Command, args []string) {
 
 	values := make([]Value, 0, 100)
 	for _, typ := range config.TypeNames {
+		// type import. normal type or const
 		pkg.TypeDeclWithName(typ, func(decl *ast.GenDecl, tspec *ast.TypeSpec) {
 			if decl.Doc != nil {
-				g.PrintDoc(strings.TrimSpace(decl.Doc.Text()))
+				g.PrintDoc(decl.Doc.Text())
 			}
 			g.Printf("type %[1]s = %[2]s.%[1]s", typ, fromPkg)
 			if tspec.Comment != nil {
@@ -102,37 +101,45 @@ func RunCommand(cmd *cobra.Command, args []string) {
 			}
 			return
 		})
+		// const value imort
 		values = values[:0]
-		pkg.ConstDeclWithType(typ, func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool {
-			for _, name := range vspec.Names {
-				if name.Name == "_" {
-					continue
-				}
+		pkg.ConstDeclValueWithType(typ,
+			func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool {
+				for _, name := range vspec.Names {
+					if len(name.Name) < 1 {
+						continue
+					}
+					// ignore
+					if name.Name[0] == '_' {
+						continue
+					}
 
-				// unexport value
-				if unicode.IsLower([]rune(name.Name)[0]) {
-					continue
-				}
+					// unexport value
+					if unicode.IsLower([]rune(name.Name)[0]) {
+						continue
+					}
 
-				v := Value{
-					originalName: name.Name,
+					v := Value{
+						originalName: name.Name,
+					}
+					if vspec.Doc != nil {
+						v.doc = strings.TrimSpace(vspec.Doc.Text())
+					}
+					if c := vspec.Comment; c != nil {
+						v.comment = strings.TrimSpace(c.Text())
+					}
+					v.name = strings.TrimPrefix(v.originalName, config.TrimPrefix)
+					values = append(values, v)
 				}
-				if vspec.Doc != nil {
-					v.doc = strings.TrimSpace(vspec.Doc.Text())
-				}
-				if c := vspec.Comment; c != nil {
-					v.comment = strings.TrimSpace(c.Text())
-				}
-				v.name = strings.TrimPrefix(v.originalName, config.TrimPrefix)
-				values = append(values, v)
-			}
-			return true
-		})
+				return true
+			},
+		)
+		// generate const value import code
 		if len(values) > 0 {
 			// We use stable sort so the lexically first name is chosen for equal elements.
 			sort.Stable(byValue(values))
 
-			g.Printf("const (\n")
+			g.Printf("\nconst (\n")
 			for _, v := range values {
 				g.PrintDoc(v.doc)
 				g.Printf("\t%[1]s = %[2]s.%[3]s", v.name, fromPkg, v.originalName)
@@ -143,6 +150,34 @@ func RunCommand(cmd *cobra.Command, args []string) {
 				}
 			}
 			g.Printf(")\n")
+		}
+		// new function import
+		if config.NewFunc {
+			pkg.FuncDecl(func(decl *ast.FuncDecl) bool {
+				// ignore struct methond
+				if decl.Recv != nil && len(decl.Recv.List) > 0 {
+					return true
+				}
+				// ignore not return values
+				if decl.Type.Results.NumFields() < 1 {
+					return true
+				}
+				// first return value is dest object
+				ident, ok := decl.Type.Results.List[0].Type.(*ast.Ident)
+				if !ok {
+					return true
+				}
+				// check first return value
+				if ident.Name != typ {
+					return true
+				}
+
+				if decl.Doc != nil {
+					g.PrintDoc(decl.Doc.Text())
+				}
+				g.Printf("var %[1]s = %[2]s.%[1]s\n", decl.Name.String(), fromPkg)
+				return true
+			})
 		}
 	}
 

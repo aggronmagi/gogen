@@ -5,6 +5,7 @@ import (
 	"strconv"
 )
 
+// go generate tools environment value.
 const (
 	GOARCH    = "GOARCH"
 	GOOS      = "GOOS"
@@ -16,6 +17,7 @@ const (
 	GoGeneratePrefix = "//go:generate"
 )
 
+// go generate tools environment value.
 var (
 	EnvGoArch    string
 	EnvGoOS      string
@@ -25,6 +27,7 @@ var (
 	EnvGoLine    int
 )
 
+// parse tools env values
 func init() {
 	EnvGoArch = os.Getenv(GOARCH)
 	EnvGoOS = os.Getenv(GOOS)

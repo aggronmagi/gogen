@@ -37,6 +37,7 @@ func ParseGeneratePackage(tags ...string) (pkg *Package, err error) {
 	return
 }
 
+// ParsePackage parse specified packages.
 func ParsePackage(patterns []string, tags ...string) (pkg *Package, err error) {
 	cfg := &packages.Config{
 		Mode:       packages.LoadSyntax,
@@ -57,6 +58,7 @@ func ParsePackage(patterns []string, tags ...string) (pkg *Package, err error) {
 	return
 }
 
+// GenDecl range all GenDecl
 func (p *Package) GenDecl(f func(decl *ast.GenDecl) bool) {
 	for _, file := range p.pkg.Syntax {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -68,6 +70,7 @@ func (p *Package) GenDecl(f func(decl *ast.GenDecl) bool) {
 	}
 }
 
+// FuncDecl range func declare
 func (p *Package) FuncDecl(f func(decl *ast.FuncDecl) bool) {
 	for _, file := range p.pkg.Syntax {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -79,7 +82,8 @@ func (p *Package) FuncDecl(f func(decl *ast.FuncDecl) bool) {
 	}
 }
 
-func (p *Package) ConstDecl(f func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool) {
+// ConstDecl range const value
+func (p *Package) ConstDeclValue(f func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool) {
 	p.GenDecl(func(decl *ast.GenDecl) bool {
 		if decl.Tok != token.CONST {
 			return true
@@ -94,7 +98,8 @@ func (p *Package) ConstDecl(f func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool
 	})
 }
 
-func (p *Package) ConstDeclWithType(t string, f func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool) {
+// ConstDeclValueWithType range specified type const values
+func (p *Package) ConstDeclValueWithType(t string, f func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool) {
 	p.GenDecl(func(decl *ast.GenDecl) bool {
 		if decl.Tok != token.CONST {
 			return true
@@ -143,6 +148,7 @@ func (p *Package) ConstDeclWithType(t string, f func(decl *ast.GenDecl, vspec *a
 	})
 }
 
+// TypeDecl range type declare
 func (p *Package) TypeDecl(f func(decl *ast.GenDecl, typ *ast.TypeSpec) bool) {
 	p.GenDecl(func(decl *ast.GenDecl) bool {
 		if decl.Tok != token.TYPE {
@@ -158,6 +164,7 @@ func (p *Package) TypeDecl(f func(decl *ast.GenDecl, typ *ast.TypeSpec) bool) {
 	})
 }
 
+// TypeDeclWithName run with specified type define
 func (p *Package) TypeDeclWithName(typ string, f func(decl *ast.GenDecl, typ *ast.TypeSpec)) {
 	p.GenDecl(func(decl *ast.GenDecl) bool {
 		if decl.Tok != token.TYPE {
@@ -176,6 +183,7 @@ func (p *Package) TypeDeclWithName(typ string, f func(decl *ast.GenDecl, typ *as
 	})
 }
 
+// VarDecl range value define
 func (p *Package) VarDecl(f func(decl *ast.GenDecl, typ *ast.ValueSpec) bool) {
 	p.GenDecl(func(decl *ast.GenDecl) bool {
 		if decl.Tok != token.TYPE {
@@ -191,23 +199,28 @@ func (p *Package) VarDecl(f func(decl *ast.GenDecl, typ *ast.ValueSpec) bool) {
 	})
 }
 
+// GetDefObj get define object
 func (p *Package) GetDefObj(name *ast.Ident) (obj types.Object, ok bool) {
 	obj, ok = p.pkg.TypesInfo.Defs[name]
 	return
 }
 
+// Position transport to Position
 func (p *Package) Position(pos token.Pos) token.Position {
 	return p.pkg.Fset.Position(pos)
 }
 
+// Package get original package  
 func (p *Package) Package() *packages.Package {
 	return p.pkg
 }
 
+// Fset get fileset
 func (p *Package) Fset() *token.FileSet {
 	return p.pkg.Fset
 }
 
+// GetGenerateNode get go generate tools specified node
 func (p *Package) GetGenerateNode() (node ast.Node) {
 	for k, name := range p.pkg.CompiledGoFiles {
 		if name != EnvGoFile {
@@ -224,7 +237,7 @@ func (p *Package) GetGenerateNode() (node ast.Node) {
 			})
 		}
 		// add compatibility
-		for add := 1; add < 3; add++ {
+		for add := 1; add < 1+GoGenerateToolsCompatibilityLineCount; add++ {
 			search(add)
 			if node != nil {
 				return
@@ -235,3 +248,6 @@ func (p *Package) GetGenerateNode() (node ast.Node) {
 	}
 	return
 }
+
+// GoGenerateToolsCompatibilityLineCount use to modify compatibility line count
+var GoGenerateToolsCompatibilityLineCount int = 2

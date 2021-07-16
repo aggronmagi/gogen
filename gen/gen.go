@@ -28,6 +28,7 @@ func (g *Generator) Println(args ...interface{}) {
 }
 
 func (g *Generator) PrintDoc(docs string) {
+	docs = strings.TrimSpace(docs)
 	if len(docs) < 1 {
 		return
 	}
@@ -49,5 +50,5 @@ func (g *Generator) Write(file string) (err error) {
 		src = g.Buf.Bytes()
 	}
 
-	return ioutil.WriteFile(file, src, 0444)
+	return ioutil.WriteFile(file, src, 0644)
 }
