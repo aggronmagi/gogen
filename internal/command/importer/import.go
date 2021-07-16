@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -258,17 +259,19 @@ func (g *Generator) generate(typeName string) {
 	}
 	g.Printf("\n")
 
-	g.Printf("const (\n")
-	for _, v := range values {
-		g.PrintDoc(v.doc)
-		g.Printf("\t%[1]s = %[2]s.%[3]s", v.name, g.pkg.name, v.originalName)
-		if len(v.comment) > 0 {
-			g.Printf(" // %s\n", v.comment)
-		} else {
-			g.Printf("\n")
+	if len(values) > 0 {
+		g.Printf("const (\n")
+		for _, v := range values {
+			g.PrintDoc(v.doc)
+			g.Printf("\t%[1]s = %[2]s.%[3]s", v.name, g.pkg.name, v.originalName)
+			if len(v.comment) > 0 {
+				g.Printf(" // %s\n", v.comment)
+			} else {
+				g.Printf("\n")
+			}
 		}
+		g.Printf(")\n")
 	}
-	g.Printf(")\n")
 
 }
 
@@ -395,6 +398,10 @@ func (f *File) genDecl(node ast.Node) bool {
 			// if !ok {
 			// 	log.Fatalf("no value for constant %s", name)
 			// }
+			// unexport value
+			if unicode.IsLower([]rune(name.Name)[0]) {
+				continue
+			}
 
 			v := Value{
 				originalName: name.Name,
