@@ -6,6 +6,8 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -13,28 +15,6 @@ import (
 
 type Package struct {
 	pkg *packages.Package
-}
-
-// ParseGeneratePackage by go generate env
-func ParseGeneratePackage(tags ...string) (pkg *Package, err error) {
-	cfg := &packages.Config{
-		Mode:       packages.LoadSyntax,
-		Tests:      false,
-		BuildFlags: []string{fmt.Sprintf("-tags=%s", strings.Join(tags, " "))},
-	}
-	pkgs, err := packages.Load(cfg, EnvGoFile)
-	if err != nil {
-		return
-	}
-	if len(pkgs) != 1 {
-		err = fmt.Errorf("error: %d packages found", len(pkgs))
-		return
-	}
-	pkg = &Package{
-		pkg: pkgs[0],
-	}
-
-	return
 }
 
 // ParsePackage parse specified packages.
@@ -59,11 +39,12 @@ func ParsePackage(patterns []string, tags ...string) (pkg *Package, err error) {
 }
 
 // GenDecl range all GenDecl
-func (p *Package) GenDecl(f func(decl *ast.GenDecl) bool) {
+func (p *Package) GenDecl(f func(decl *ast.GenDecl, cm ast.CommentMap) bool) {
 	for _, file := range p.pkg.Syntax {
+		cm := ast.NewCommentMap(p.pkg.Fset, file, file.Comments)
 		ast.Inspect(file, func(n ast.Node) bool {
 			if decl, ok := n.(*ast.GenDecl); ok {
-				return f(decl)
+				return f(decl, cm)
 			}
 			return true
 		})
@@ -71,11 +52,12 @@ func (p *Package) GenDecl(f func(decl *ast.GenDecl) bool) {
 }
 
 // FuncDecl range func declare
-func (p *Package) FuncDecl(f func(decl *ast.FuncDecl) bool) {
+func (p *Package) FuncDecl(f func(decl *ast.FuncDecl, cm ast.CommentMap) bool) {
 	for _, file := range p.pkg.Syntax {
+		cm := ast.NewCommentMap(p.pkg.Fset, file, file.Comments)
 		ast.Inspect(file, func(n ast.Node) bool {
 			if decl, ok := n.(*ast.FuncDecl); ok {
-				return f(decl)
+				return f(decl, cm)
 			}
 			return true
 		})
@@ -83,14 +65,14 @@ func (p *Package) FuncDecl(f func(decl *ast.FuncDecl) bool) {
 }
 
 // ConstDecl range const value
-func (p *Package) ConstDeclValue(f func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool) {
-	p.GenDecl(func(decl *ast.GenDecl) bool {
+func (p *Package) ConstDeclValue(f func(decl *ast.GenDecl, vspec *ast.ValueSpec, cm ast.CommentMap) bool) {
+	p.GenDecl(func(decl *ast.GenDecl, cm ast.CommentMap) bool {
 		if decl.Tok != token.CONST {
 			return true
 		}
 		for _, spec := range decl.Specs {
 			vspec := spec.(*ast.ValueSpec)
-			if !f(decl, vspec) {
+			if !f(decl, vspec, cm) {
 				return false
 			}
 		}
@@ -99,8 +81,8 @@ func (p *Package) ConstDeclValue(f func(decl *ast.GenDecl, vspec *ast.ValueSpec)
 }
 
 // ConstDeclValueWithType range specified type const values
-func (p *Package) ConstDeclValueWithType(t string, f func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool) {
-	p.GenDecl(func(decl *ast.GenDecl) bool {
+func (p *Package) ConstDeclValueWithType(t string, f func(decl *ast.GenDecl, vspec *ast.ValueSpec, cm ast.CommentMap) bool) {
+	p.GenDecl(func(decl *ast.GenDecl, cm ast.CommentMap) bool {
 		if decl.Tok != token.CONST {
 			return true
 		}
@@ -140,7 +122,7 @@ func (p *Package) ConstDeclValueWithType(t string, f func(decl *ast.GenDecl, vsp
 				// This is not the type we're looking for.
 				continue
 			}
-			if !f(decl, vspec) {
+			if !f(decl, vspec, cm) {
 				return false
 			}
 		}
@@ -149,14 +131,14 @@ func (p *Package) ConstDeclValueWithType(t string, f func(decl *ast.GenDecl, vsp
 }
 
 // TypeDecl range type declare
-func (p *Package) TypeDecl(f func(decl *ast.GenDecl, typ *ast.TypeSpec) bool) {
-	p.GenDecl(func(decl *ast.GenDecl) bool {
+func (p *Package) TypeDecl(f func(decl *ast.GenDecl, typ *ast.TypeSpec, cm ast.CommentMap) bool) {
+	p.GenDecl(func(decl *ast.GenDecl, cm ast.CommentMap) bool {
 		if decl.Tok != token.TYPE {
 			return true
 		}
 		for _, spec := range decl.Specs {
 			tspec := spec.(*ast.TypeSpec)
-			if !f(decl, tspec) {
+			if !f(decl, tspec, cm) {
 				return false
 			}
 		}
@@ -165,8 +147,8 @@ func (p *Package) TypeDecl(f func(decl *ast.GenDecl, typ *ast.TypeSpec) bool) {
 }
 
 // TypeDeclWithName run with specified type define
-func (p *Package) TypeDeclWithName(typ string, f func(decl *ast.GenDecl, typ *ast.TypeSpec)) {
-	p.GenDecl(func(decl *ast.GenDecl) bool {
+func (p *Package) TypeDeclWithName(typ string, f func(decl *ast.GenDecl, typ *ast.TypeSpec, cm ast.CommentMap)) {
+	p.GenDecl(func(decl *ast.GenDecl, cm ast.CommentMap) bool {
 		if decl.Tok != token.TYPE {
 			return true
 		}
@@ -176,7 +158,7 @@ func (p *Package) TypeDeclWithName(typ string, f func(decl *ast.GenDecl, typ *as
 			if tspec.Name.String() != typ {
 				continue
 			}
-			f(decl, tspec)
+			f(decl, tspec, cm)
 			return false
 		}
 		return true
@@ -184,14 +166,14 @@ func (p *Package) TypeDeclWithName(typ string, f func(decl *ast.GenDecl, typ *as
 }
 
 // VarDecl range value define
-func (p *Package) VarDecl(f func(decl *ast.GenDecl, typ *ast.ValueSpec) bool) {
-	p.GenDecl(func(decl *ast.GenDecl) bool {
+func (p *Package) VarDecl(f func(decl *ast.GenDecl, typ *ast.ValueSpec, cm ast.CommentMap) bool) {
+	p.GenDecl(func(decl *ast.GenDecl, cm ast.CommentMap) bool {
 		if decl.Tok != token.TYPE {
 			return true
 		}
 		for _, spec := range decl.Specs {
 			vspec := spec.(*ast.ValueSpec)
-			if !f(decl, vspec) {
+			if !f(decl, vspec, cm) {
 				return false
 			}
 		}
@@ -210,7 +192,7 @@ func (p *Package) Position(pos token.Pos) token.Position {
 	return p.pkg.Fset.Position(pos)
 }
 
-// Package get original package  
+// Package get original package
 func (p *Package) Package() *packages.Package {
 	return p.pkg
 }
@@ -220,15 +202,46 @@ func (p *Package) Fset() *token.FileSet {
 	return p.pkg.Fset
 }
 
+// ParseGeneratePackage by go generate env
+func ParseGeneratePackage(tags ...string) (pkg *Package, err error) {
+	cfg := &packages.Config{
+		Mode:       packages.LoadSyntax,
+		Tests:      false,
+		BuildFlags: []string{fmt.Sprintf("-tags=%s", strings.Join(tags, " "))},
+	}
+	pkgs, err := packages.Load(cfg, EnvGoFile)
+	if err != nil {
+		return
+	}
+	if len(pkgs) != 1 {
+		err = fmt.Errorf("error: %d packages found", len(pkgs))
+		return
+	}
+	pkg = &Package{
+		pkg: pkgs[0],
+	}
+
+	return
+}
+
 // GetGenerateNode get go generate tools specified node
-func (p *Package) GetGenerateNode() (node ast.Node) {
+func (p *Package) GetGenerateNode() (node ast.Node, cm ast.CommentMap, err error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		err = fmt.Errorf("get current directory: %w", err)
+	}
 	for k, name := range p.pkg.CompiledGoFiles {
-		if name != EnvGoFile {
+		fname := filepath.Join(dir, EnvGoFile)
+		if fname != name {
 			continue
 		}
 		file := p.pkg.Syntax[k]
+		cm = ast.NewCommentMap(p.pkg.Fset, file, file.Comments)
 		search := func(lineAdd int) {
 			ast.Inspect(file, func(n ast.Node) bool {
+				if n == nil {
+					return true
+				}
 				if p.Position(n.Pos()).Line == EnvGoLine+lineAdd {
 					node = n
 					return false
@@ -245,6 +258,9 @@ func (p *Package) GetGenerateNode() (node ast.Node) {
 		}
 
 		break
+	}
+	if node == nil {
+		err = fmt.Errorf("not found %s:%d ", EnvGoFile, EnvGoLine)
 	}
 	return
 }

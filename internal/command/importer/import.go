@@ -89,7 +89,7 @@ func RunCommand(cmd *cobra.Command, args []string) {
 	values := make([]Value, 0, 100)
 	for _, typ := range config.TypeNames {
 		// type import. normal type or const
-		pkg.TypeDeclWithName(typ, func(decl *ast.GenDecl, tspec *ast.TypeSpec) {
+		pkg.TypeDeclWithName(typ, func(decl *ast.GenDecl, tspec *ast.TypeSpec, cm ast.CommentMap) {
 			if decl.Doc != nil {
 				g.PrintDoc(decl.Doc.Text())
 			}
@@ -104,7 +104,7 @@ func RunCommand(cmd *cobra.Command, args []string) {
 		// const value imort
 		values = values[:0]
 		pkg.ConstDeclValueWithType(typ,
-			func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool {
+			func(decl *ast.GenDecl, vspec *ast.ValueSpec, cm ast.CommentMap) bool {
 				for _, name := range vspec.Names {
 					if len(name.Name) < 1 {
 						continue
@@ -153,7 +153,7 @@ func RunCommand(cmd *cobra.Command, args []string) {
 		}
 		// new function import
 		if config.NewFunc {
-			pkg.FuncDecl(func(decl *ast.FuncDecl) bool {
+			pkg.FuncDecl(func(decl *ast.FuncDecl, cm ast.CommentMap) bool {
 				// ignore struct methond
 				if decl.Recv != nil && len(decl.Recv.List) > 0 {
 					return true

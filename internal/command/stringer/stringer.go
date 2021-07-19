@@ -156,7 +156,7 @@ func RunCommand(cmd *cobra.Command, args []string) {
 		// const value imort
 		values = values[:0]
 		pkg.ConstDeclValueWithType(typeName,
-			func(decl *ast.GenDecl, vspec *ast.ValueSpec) bool {
+			func(decl *ast.GenDecl, vspec *ast.ValueSpec, cm ast.CommentMap) bool {
 				// We now have a list of names (from one line of source code) all being
 				// declared with the desired type.
 				// Grab their names and actual values and store them in f.values.
