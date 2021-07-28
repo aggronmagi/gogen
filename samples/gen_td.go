@@ -18,11 +18,5 @@ const (
 	T3 = testdata.T3 // T3 line suffix comment 1
 )
 
-// NewTestType new func 1
-var NewTestType = testdata.NewTestType
-
-// NewTestType2 new func 2
-var NewTestType2 = testdata.NewTestType2
-
 // TestString comment for test string 1
 type TestString = testdata.TestString //  comment for test string 2

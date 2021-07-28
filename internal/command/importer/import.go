@@ -4,11 +4,11 @@ package importer
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"log"
 	"os"
 	"sort"
 	"strings"
-	"unicode"
 
 	"github.com/aggronmagi/gogen/gen"
 	"github.com/aggronmagi/gogen/goparse"
@@ -115,7 +115,7 @@ func RunCommand(cmd *cobra.Command, args []string) {
 					}
 
 					// unexport value
-					if unicode.IsLower([]rune(name.Name)[0]) {
+					if !token.IsExported(name.Name) {
 						continue
 					}
 
