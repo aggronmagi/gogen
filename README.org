@@ -9,6 +9,18 @@ golang generate tool collection and merge.
 
 
 ** stringer
+#+begin_src text
+Usage:
+  gogen stringer [flags] -t T [directory | files ]
+
+Flags:
+  -h, --help                help for stringer
+      --linecomment         use line comment text as printed text when present
+  -o, --output string       output file name; default srcdir/<type>_string.go
+      --tags strings        comma-separated list of build tags to apply
+  -p, --trimprefix prefix   trim the prefix from the generated constant names
+  -t, --type strings        list of type names; must be set
+#+end_src
 sample source code
 [[./samples/testdata/test.go][samples/testdata/test.go]]
 #+begin_src go
@@ -60,6 +72,22 @@ func (i TestType) String() string {
 #+end_src
 
 ** import
+#+begin_src text
+Usage:
+  gogen import [flag] -t T  [flags]
+
+Flags:
+  -f, --func strings        list of functions names
+  -h, --help                help for import
+      --new                 import type new functions
+  -o, --output string       output file name; default <package>_import.go
+      --tags strings        comma-separated list of build tags to apply
+      --to string           which package be imported, extract the package from this folder (default ".")
+  -p, --trimprefix prefix   trim the prefix from the generated constant names
+  -t, --type strings        list of type names; must be set
+  -v, --value strings       list of value names
+      --version             version for import
+#+end_src
 sample source code
 [[./samples/testdata/test.go][samples/testdata/test.go]]
 #+begin_src go
@@ -102,8 +130,18 @@ const (
 #+end_src
 
 ** option
-sample source code
+#+begin_src text
+Usage:
+  gogen option [flags]
 
+Flags:
+  -e, --all-export            Export all field option settings. If set to false, lowercase fields will not be exported. (default true)
+  -a, --gen-slice-append      decide whether generate append method for slice option.
+  -h, --help                  help for option
+  -n, --options-name string   generate options name,default collection from function name.
+  -f, --with-option-name      Decide whether the name of the generated setting function has an option name, which is used to have multiple options for repetitio
+#+end_src
+sample source code
 #+begin_src go
 
 // Google Public DNS provides two distinct DoH APIs at these endpoints
@@ -341,4 +379,5 @@ func newDefaultConfigOptions() *ConfigOptions {
 
 ** wait
 [[https://github.com/vburenin/ifacemaker][ifacemaker-generate interface for gomock]]
+
 [[https://github.com/xyz347/pbidl/][pbidl - protobuf parse by goyacc]]

@@ -29,16 +29,12 @@ import (
 // optionCmd represents the option command
 var optionCmd = &cobra.Command{
 	Use:   "option",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "generate go Struct option for test, mock or more flexible",
+	Long: `generate go Struct option for test, mock or more flexible`,
 	Run: func(cmd *cobra.Command, args []string) {
 		option.RunCommand(cmd, args...)
 	},
+	Version: option.Version,
 }
 
 func init() {
