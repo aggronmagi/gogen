@@ -377,7 +377,12 @@ func newDefaultConfigOptions() *ConfigOptions {
 
 #+end_src
 
-** wait
+** TODO-LIST
+
 [[https://github.com/vburenin/ifacemaker][ifacemaker-generate interface for gomock]]
+
+[[https://github.com/ncw/gotemplate][github.com/ncw/gotemplate]]
+
+** others
 
 [[https://github.com/xyz347/pbidl/][pbidl - protobuf parse by goyacc]]
