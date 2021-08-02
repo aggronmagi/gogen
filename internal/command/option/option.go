@@ -364,7 +364,7 @@ func (opt *optionStruct) fixStruct() {
 			opt.Name += "s"
 		} else {
 			opt.OptionName = opt.Name + "Option"
-			opt.Name += "Options"
+			// opt.Name += "Options"
 		}
 	}
 	for _, f := range opt.Fields {
