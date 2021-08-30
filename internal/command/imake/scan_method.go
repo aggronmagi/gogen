@@ -45,6 +45,30 @@ func (m *StructMethod) String() string {
 		strings.Join(params, ","), strings.Join(result, ","))
 }
 
+func (m *StructMethod) Args() string {
+	params := make([]string, 0, len(m.Params))
+	for _, v := range m.Params {
+		params = append(params, v.String())
+	}
+	return strings.Join(params, ",")
+}
+
+func (m *StructMethod) Args2() string {
+	params := make([]string, 0, len(m.Params))
+	for _, v := range m.Params {
+		params = append(params, strings.Join(v.Names, ","))
+	}
+	return strings.Join(params, ",")
+}
+
+func (m *StructMethod) Rets() string {
+	result := make([]string, 0, len(m.Results))
+	for _, v := range m.Results {
+		result = append(result, v.String())
+	}
+	return strings.Join(result, ",")
+}
+
 type CompositeStructInfo struct {
 	Typ      string
 	IsStruct bool
