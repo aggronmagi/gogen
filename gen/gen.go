@@ -9,6 +9,8 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+
+	"golang.org/x/tools/imports"
 )
 
 // Generator used to buffer the output for format.Source.
@@ -79,6 +81,16 @@ func OptionGoimportsFormtat(in []byte) ([]byte, error) {
 	err := cmd.Run()
 	if err == nil {
 		return out.Bytes(), nil
+	}
+	opts := &imports.Options{
+		TabIndent: false,
+		TabWidth:  4,
+		Fragment:  true,
+		Comments:  true,
+	}
+	data ,err :=  imports.Process("", in, opts)
+	if err == nil {
+		return data,nil
 	}
 	return format.Source(in)
 }

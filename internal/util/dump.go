@@ -7,7 +7,9 @@ package util
 import (
 	"fmt"
 	"reflect"
+	"runtime"
 	"strconv"
+	"strings"
 )
 
 type variable struct {
@@ -98,11 +100,19 @@ func (v *variable) printIndent() {
 
 // Dump print to standard out the value that is passed as the argument with indentation.
 // Pointers are dereferenced.
-func Dump(v interface{}) {
+func Dump(v interface{}, tips ...string) {
 	val := reflect.ValueOf(v)
 	dump := &variable{indent: -1}
-	dump.dump(val, "", false)
-	fmt.Printf("%s", dump.Out)
+	dump.dump(val, "  ", false)
+	if frame, ok := getCallerFrame(1); ok {
+		if len(dump.Out) == 0 {
+			dump.Out = "nil"
+		}
+		fmt.Printf("%s:%d:\n%s%s", frame.File, frame.Line, strings.Join(tips, "\n"), dump.Out)
+	} else {
+		fmt.Printf("%s", dump.Out)
+	}
+
 }
 
 // Sdump return the value that is passed as the argument with indentation.
@@ -112,4 +122,23 @@ func Sdump(v interface{}, name string) string {
 	dump := &variable{indent: -1}
 	dump.dump(val, name, false)
 	return dump.Out
+}
+
+// getCallerFrame gets caller frame. The argument skip is the number of stack
+// frames to ascend, with 0 identifying the caller of getCallerFrame. The
+// boolean ok is false if it was not possible to recover the information.
+//
+// Note: This implementation is similar to runtime.Caller, but it returns the whole frame.
+// copy from zap
+func getCallerFrame(skip int) (frame runtime.Frame, ok bool) {
+	const skipOffset = 2 // skip getCallerFrame and Callers
+
+	pc := make([]uintptr, 1)
+	numFrames := runtime.Callers(skip+skipOffset, pc[:])
+	if numFrames < 1 {
+		return
+	}
+
+	frame, _ = runtime.CallersFrames(pc).Next()
+	return frame, frame.PC != 0
 }

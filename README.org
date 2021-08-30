@@ -1,3 +1,6 @@
+#+startup: overview
+#+title: gogen
+
 * gogen
 golang generate tool collection and merge.
 

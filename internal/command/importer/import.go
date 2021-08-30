@@ -57,7 +57,7 @@ func RunCommand(cmd *cobra.Command, args []string) {
 
 	// We accept either one directory or a list of files. Which do we have?
 	if len(args) == 0 {
-		log.Println("not input files or directory")
+		log.Println("not input files,package  or directory")
 		cmd.Help()
 		os.Exit(2)
 	}
