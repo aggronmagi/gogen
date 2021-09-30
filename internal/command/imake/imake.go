@@ -43,7 +43,7 @@ var config = struct {
 }
 
 // Version generate tool version
-var Version string = "0.0.1"
+var Version string = "0.0.2"
 
 // Flags generate tool flags
 func Flags(set *pflag.FlagSet) {
@@ -309,11 +309,6 @@ func sortMethod(in []*StructMethod) []*StructMethod {
 
 // IsGenerateStruct 是否生成结构体
 func IsGenerateStruct(name string) bool {
-	// 忽略未导出
-	if config.IgnoreUnexportStruct &&
-		!token.IsExported(name) {
-		return false
-	}
 	// 优先使用指定具体生成的参数
 	if len(config.TypeNames) > 0 {
 		for _, v := range config.TypeNames {
@@ -323,10 +318,18 @@ func IsGenerateStruct(name string) bool {
 		}
 		return false
 	}
+
+	// 忽略未导出
+	if config.IgnoreUnexportStruct &&
+		!token.IsExported(name) {
+		return false
+	}
+
 	// 匹配
 	if config.match != nil {
 		return config.match.Match([]byte(name))
 	}
+
 	// 默认生成全部结构体
 	return true
 }
