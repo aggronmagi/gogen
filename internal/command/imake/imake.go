@@ -36,6 +36,7 @@ var config = struct {
 	IFaceMap             map[string]string // 接口名称映射
 	Mock                 bool              // 为结构体生成mock
 	MergeUnexportIFace   bool              // 将未导出的结构体接口合并
+	SortByPos            bool              // 函数以定义的顺序排序
 	BuildTags            []string
 	match                *regexp.Regexp
 }{
@@ -44,10 +45,11 @@ var config = struct {
 	IgnoreUnexportStruct: true,
 	IgnoreUnexportMethod: true,
 	IFaceMap:             make(map[string]string),
+	SortByPos:            true,
 }
 
 // Version generate tool version
-var Version string = "0.0.3"
+var Version string = "0.0.4"
 
 // Flags generate tool flags
 func Flags(set *pflag.FlagSet) {
@@ -64,6 +66,7 @@ func Flags(set *pflag.FlagSet) {
 	set.StringSliceVar(&config.BuildTags, "tags", config.BuildTags, "comma-separated list of build tags to apply")
 	set.BoolVar(&config.Mock, "mock", config.Mock, "generate struct mock functions")
 	set.BoolVar(&config.MergeUnexportIFace, "merge", config.MergeUnexportIFace, "merge unexport struct method to interface")
+	set.BoolVar(&config.SortByPos, "sort-by-pos", config.SortByPos, "sort method by code pos")
 }
 
 // RunCommand run generate command
@@ -308,9 +311,7 @@ func Stub%[1]sMock(ctl *gomock.Controller) (mock *Mock%[1]s%[2]s,st *%[3]s) {
 }
 
 func GetIfaceName(name string) string {
-	log.Printf("..=>[%s] %#v\n", name, config.IFaceMap)
 	if nm, ok := config.IFaceMap[name]; ok {
-		log.Println("replace ", nm)
 		return nm
 	}
 
@@ -330,6 +331,9 @@ func sortMapKey(in map[string]*StructInfo) (out []string) {
 
 func sortMethod(in []*StructMethod) []*StructMethod {
 	sort.Slice(in, func(i, j int) bool {
+		if config.SortByPos {
+			return in[i].fileLine < in[j].fileLine
+		}
 		return in[i].Name < in[j].Name
 	})
 	return in
