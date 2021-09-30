@@ -24,15 +24,18 @@ var _ = util.Dump
 
 // command config
 var config = struct {
-	TypeNames            []string // 指定生成的结构体名称
-	StructMatch          string   // 使用正则匹配生成的结构体名称
-	IgnoreUnexportStruct bool     // 忽略未导出结构体
-	IgnoreUnexportMethod bool     // 忽略未导出的成员函数
-	IgnoreEmptyStruct    bool     // 忽略没有函数的结构体
-	ToPkg                string   // 生成的package名
-	Output               string   // 生成的文件名
-	IfaceSufix           string   // 生成接口名称的的后缀
-	Mock                 bool     // 为结构体生成mock
+	TypeNames            []string          // 指定生成的结构体名称
+	StructMatch          string            // 使用正则匹配生成的结构体名称
+	IgnoreUnexportStruct bool              // 忽略未导出结构体
+	IgnoreUnexportMethod bool              // 忽略未导出的成员函数
+	IgnoreEmptyStruct    bool              // 忽略没有函数的结构体
+	ToPkg                string            // 生成的package名
+	Output               string            // 生成的文件名
+	IfaceSufix           string            // 生成接口名称的的后缀
+	IfacePrefix          string            // 生成接口名称的的前缀
+	IFaceMap             map[string]string // 接口名称映射
+	Mock                 bool              // 为结构体生成mock
+	MergeUnexportIFace   bool              // 将未导出的结构体接口合并
 	BuildTags            []string
 	match                *regexp.Regexp
 }{
@@ -40,14 +43,16 @@ var config = struct {
 	IfaceSufix:           "IFace",
 	IgnoreUnexportStruct: true,
 	IgnoreUnexportMethod: true,
+	IFaceMap:             make(map[string]string),
 }
 
 // Version generate tool version
-var Version string = "0.0.2"
+var Version string = "0.0.3"
 
 // Flags generate tool flags
 func Flags(set *pflag.FlagSet) {
 	set.StringSliceVarP(&config.TypeNames, "type", "t", config.TypeNames, "list of type names; current option is mutually exclusive with `match`")
+	set.StringToStringVarP(&config.IFaceMap, "replace", "r", config.IFaceMap, "replace interface name")
 	set.StringVarP(&config.StructMatch, "match", "m", "", "match struct name;current option is mutually exclusive with `type`")
 	set.BoolVar(&config.IgnoreUnexportStruct, "ignore-unexport-struct", config.IgnoreUnexportStruct, "is ignore unexport struct")
 	set.BoolVar(&config.IgnoreUnexportMethod, "ignore-unexport-method", config.IgnoreUnexportMethod, "is ignore unexport method")
@@ -55,8 +60,10 @@ func Flags(set *pflag.FlagSet) {
 	set.StringVarP(&config.Output, "output", "o", config.Output, "output file name; default stdout")
 	set.StringVar(&config.ToPkg, "to", config.ToPkg, "generated package name")
 	set.StringVarP(&config.IfaceSufix, "suffix", "s", config.IfaceSufix, "add interface name suffix")
+	set.StringVarP(&config.IfacePrefix, "prefix", "p", config.IfacePrefix, "add interface name suffix")
 	set.StringSliceVar(&config.BuildTags, "tags", config.BuildTags, "comma-separated list of build tags to apply")
 	set.BoolVar(&config.Mock, "mock", config.Mock, "generate struct mock functions")
+	set.BoolVar(&config.MergeUnexportIFace, "merge", config.MergeUnexportIFace, "merge unexport struct method to interface")
 }
 
 // RunCommand run generate command
@@ -136,16 +143,27 @@ func RunCommand(cmd *cobra.Command, args []string) {
 
 	for _, key := range keys {
 		info := data[key]
+		if config.MergeUnexportIFace && !token.IsExported(info.Typ) && info.compositeOnly {
+			continue
+		}
 		info.Methods = sortMethod(info.Methods)
 		g.PrintDoc(info.Doc)
-		g.Printf("type %s%s interface{\n", info.Typ, config.IfaceSufix)
+		g.Printf("type %s interface{\n", GetIfaceName(info.Typ))
 		for _, v := range info.Composites {
 			if !v.IsStruct {
 				// interface composite
 				g.Println(v.Typ)
 				continue
 			}
-			g.Printf("%s%s\n", v.Typ, config.IfaceSufix)
+			stInfo, stOk := data[v.Typ]
+			if config.MergeUnexportIFace && !token.IsExported(v.Typ) && stOk {
+				for _, method := range stInfo.Methods {
+					g.PrintDoc(method.Doc)
+					g.Println(method)
+				}
+			} else {
+				g.Printf("%s\n", GetIfaceName(v.Typ))
+			}
 		}
 		// util.Dump(info.Composites)
 		for _, method := range info.Methods {
@@ -287,6 +305,16 @@ func Stub%[1]sMock(ctl *gomock.Controller) (mock *Mock%[1]s%[2]s,st *%[3]s) {
 	}
 	util.FatalIfErr(g.Write(filepath.Join(filepath.Dir(mockfile), "stub.go")),
 		"write stub file")
+}
+
+func GetIfaceName(name string) string {
+	log.Printf("..=>[%s] %#v\n", name, config.IFaceMap)
+	if nm, ok := config.IFaceMap[name]; ok {
+		log.Println("replace ", nm)
+		return nm
+	}
+
+	return config.IfacePrefix + name + config.IfaceSufix
 }
 
 func sortMapKey(in map[string]*StructInfo) (out []string) {

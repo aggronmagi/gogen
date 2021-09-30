@@ -173,7 +173,8 @@ func ParsePackages(pkg *goparse.Package,
 					// composite struct
 					if _, ok := data[ct]; !ok {
 						data[ct] = &StructInfo{
-							Typ: ct,
+							Typ:           ct,
+							compositeOnly: true,
 						}
 					}
 				}
