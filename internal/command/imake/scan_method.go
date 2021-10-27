@@ -30,7 +30,8 @@ type StructMethod struct {
 	Name     string
 	Params   []*StructField
 	Results  []*StructField
-	fileLine string
+	fileName string
+	fileLine int
 }
 
 func (m *StructMethod) String() string {
@@ -240,7 +241,9 @@ func ParsePackages(pkg *goparse.Package,
 			method.Params = append(method.Params, field)
 		}
 		pos := pkg.Fset().Position(decl.Pos())
-		method.fileLine = fmt.Sprintf("%s:%d", pos.Filename, pos.Line)
+		// fmt.Sprintf("%s:%d", pos.Filename, pos.Line)
+		method.fileName = pos.Filename
+		method.fileLine = pos.Line
 		method.Params = ToFileds(pkg.Fset(), decl.Type.Params, changeType)
 		method.Results = ToFileds(pkg.Fset(), decl.Type.Results, changeType)
 		info.Methods = append(info.Methods, method)

@@ -331,10 +331,13 @@ func sortMapKey(in map[string]*StructInfo) (out []string) {
 
 func sortMethod(in []*StructMethod) []*StructMethod {
 	sort.Slice(in, func(i, j int) bool {
-		if config.SortByPos {
+		if !config.SortByPos {
+			return in[i].Name < in[j].Name
+		}
+		if in[i].fileName == in[j].fileName {
 			return in[i].fileLine < in[j].fileLine
 		}
-		return in[i].Name < in[j].Name
+		return in[i].fileName < in[j].fileName
 	})
 	return in
 }
