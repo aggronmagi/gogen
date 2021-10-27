@@ -18,6 +18,7 @@ var config = struct {
 	AllExport          bool
 	FuncWithOptionName bool
 	GenAppend          bool
+	Output string 
 }{
 	AllExport: true,
 }
@@ -42,10 +43,14 @@ func FlagSet(set *pflag.FlagSet) {
 	set.BoolVarP(&config.GenAppend, "gen-slice-append", "a", config.GenAppend,
 		"decide whether generate append method for slice option.",
 	)
+	// 生成文件名
+	set.StringVarP(&config.Output, "output", "o", config.Output,
+		"decice output file name.",
+	)
 }
 
 // Version option command version
-var Version string = "0.0.1"
+var Version string = "0.0.2"
 
 func RunCommand(cmd *cobra.Command, args ...string) {
 	// parse file from env, which was seted by go generate tool.
@@ -353,7 +358,12 @@ func (opt *optionStruct) fixStruct() {
 	// Option Name fix
 	if config.OptionsName != "" {
 		opt.Name = strings.Title(config.OptionsName)
-		opt.OptionName = opt.Name + "Option"
+		if strings.HasSuffix(opt.Name, "Option") {
+			opt.OptionName = opt.Name
+			opt.Name += "s"
+		}else {
+			opt.OptionName = opt.Name + "Option"
+		}
 	} else {
 		opt.Name = opt.FromFunc
 		opt.Name = strings.TrimPrefix(opt.Name, "_")

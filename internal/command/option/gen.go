@@ -155,7 +155,11 @@ func newDefault%[1]s () *%[1]s {
 `)
 
 	// fmt.Println(string(g.Buf.Bytes()))
-	file := "gen_" + strings.ToLower(st.Name) + ".go"
+	file := config.Output
+	if file == "" {
+		file = "gen_" + strings.ToLower(st.Name) + ".go"
+	}
+	
 	err := g.Write(file)
 	util.FatalIfErr(err, "save output failed")
 }
