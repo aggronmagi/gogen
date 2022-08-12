@@ -154,6 +154,15 @@ func ParsePackages(pkg *goparse.Package,
 					continue
 				}
 				// util.Dump(ident.Obj, "ident.Obj")
+				// util.Dump(ident, "ident")
+				if ident.Obj == nil {
+					// FIX: compose other struct pointer
+					st.Composites = append(st.Composites, &CompositeStructInfo{
+						Typ:      ident.Name,
+						IsStruct: true,
+					})
+					continue
+				}
 				isInterface := false
 				if td, ok := ident.Obj.Decl.(*ast.TypeSpec); ok {
 					switch tvv := td.Type.(type) {
