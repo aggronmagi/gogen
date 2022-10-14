@@ -23,6 +23,10 @@ func NewDefaultConfig(prefix string) *Config {
 	return cfg
 }
 
+func (cfg *Config) SetPrefix(prefix string) {
+	cfg._keyPrefix = prefix
+}
+
 func (cfg *Config) SetDefaultConfi(vcfg *viper.Viper) {
 	vcfg.SetDefault(cfg._keyPrefix+".model", cfg.Model)
 	vcfg.SetDefault(cfg._keyPrefix+".port", cfg.Port)
@@ -40,28 +44,22 @@ func (cfg *Config) ReadConfig(vcfg *viper.Viper) {
 	return
 }
 
-func SetDefaultConfig(vcfg *viper.Viper) {
-
-}
-
 func getConfig(v *viper.Viper) (err error) {
 	v.GetBool("")
 	v.GetDuration("")
+
+	v.GetString("")
+	
 	v.GetInt("")
 	v.GetInt32("")
 	v.GetInt64("")
-	v.GetInt64("")
-	v.GetIntSlice("")
-	v.GetString("")
-	v.GetStringMap("")       // map[string]interface{}
-	v.GetStringMapString("") //map[string]string
-	v.GetStringSlice("")
-	v.GetTime("")                 // time.Time
-	v.GetStringMapStringSlice("") //map[string][]string
 	v.GetUint("")
 	v.GetUint32("")
 	v.GetUint64("")
-	v.Get("")
-	v.GetSizeInBytes("")
+
+	v.GetIntSlice("")
+	v.GetStringSlice("")
+	v.GetStringMapString("")      //map[string]string
+	v.GetStringMapStringSlice("") //map[string][]string
 	return
 }
