@@ -18,7 +18,7 @@ var config = struct {
 	AllExport          bool
 	FuncWithOptionName bool
 	GenAppend          bool
-	Output string 
+	Output             string
 }{
 	AllExport: true,
 }
@@ -50,7 +50,7 @@ func FlagSet(set *pflag.FlagSet) {
 }
 
 // Version option command version
-var Version string = "0.0.2"
+var Version string = "0.0.3"
 
 func RunCommand(cmd *cobra.Command, args ...string) {
 	// parse file from env, which was seted by go generate tool.
@@ -171,12 +171,15 @@ func parseGoGenerate() (pkg *goparse.Package, optSt *optionStruct) {
 				field.Type = "string"
 			default:
 				log.Fatal("filed ", field.Name, " not support value.",
-					fmt.Sprintf("%T %#v", val.Kind),
+					fmt.Sprintf("%T %#v", val.Kind, val),
 				)
 			}
 		case *ast.CompositeLit:
 			// 复合字面量
 			field.Type = goparse.Format(pkg.Fset(), val.Type)
+			if strings.HasPrefix(field.Type, "(") && strings.HasSuffix(field.Type, ")") {
+				field.Type = strings.TrimSuffix(strings.TrimPrefix(field.Type, "("), ")")
+			}
 			// set body and comment
 			if err := convertCompositeLitBody(pkg, cm, val, field); err != nil {
 				log.Fatal("filed ", field.Name, " convert failed.",
@@ -189,6 +192,9 @@ func parseGoGenerate() (pkg *goparse.Package, optSt *optionStruct) {
 				log.Fatal("filed ", field.Name, " only allow one args.")
 			}
 			field.Type = goparse.Format(pkg.Fset(), val.Fun)
+			if strings.HasPrefix(field.Type, "(") && strings.HasSuffix(field.Type, ")") {
+				field.Type = strings.TrimSuffix(strings.TrimPrefix(field.Type, "("), ")")
+			}
 			field.Body = goparse.Format(pkg.Fset(), val.Args[0])
 			foreachComment(val.Args[0], func(g *ast.CommentGroup) {
 				// log.Print("call expr", field.Name, g.Text())
@@ -210,6 +216,9 @@ func parseGoGenerate() (pkg *goparse.Package, optSt *optionStruct) {
 			// 函数类型
 			field.FieldType = FieldTypeFunc
 			field.Type = goparse.Format(pkg.Fset(), val.Type)
+			if strings.HasPrefix(field.Type, "(") && strings.HasSuffix(field.Type, ")") {
+				field.Type = strings.TrimSuffix(strings.TrimPrefix(field.Type, "("), ")")
+			}
 			field.Body = goparse.Format(pkg.Fset(), val.Body)
 			foreachComment(val.Body, func(g *ast.CommentGroup) {
 				field.Comment = append(field.Comment, g.Text())
@@ -317,7 +326,7 @@ func (field *optionField) fix() {
 func (field *optionField) GenFuncName(st *optionStruct) string {
 	suffix := strings.Title(field.Name)
 	if config.FuncWithOptionName {
-		suffix = strings.Title(st.Name) + suffix
+		suffix = strings.Title(st.OptionName) + suffix
 	}
 	if !field.Export {
 		return "with" + suffix
@@ -328,7 +337,7 @@ func (field *optionField) GenFuncName(st *optionStruct) string {
 func (field *optionField) AppendFuncName(st *optionStruct) string {
 	suffix := strings.Title(field.Name)
 	if config.FuncWithOptionName {
-		suffix = strings.Title(st.Name) + suffix
+		suffix = strings.Title(st.OptionName) + suffix
 	}
 	if !field.Export {
 		return "append" + suffix
@@ -361,7 +370,7 @@ func (opt *optionStruct) fixStruct() {
 		if strings.HasSuffix(opt.Name, "Option") {
 			opt.OptionName = opt.Name
 			opt.Name += "s"
-		}else {
+		} else {
 			opt.OptionName = opt.Name + "Option"
 		}
 	} else {
