@@ -247,6 +247,7 @@ func ParsePackages(pkg *goparse.Package,
 					goparse.Format(pkg.Fset(), name))
 			}
 			field.Type = goparse.Format(pkg.Fset(), param.Type)
+			field.Type = trimPkg(field.Type)
 			method.Params = append(method.Params, field)
 		}
 		pos := pkg.Fset().Position(decl.Pos())
@@ -284,6 +285,7 @@ func ToFileds(fset *token.FileSet, in *ast.FieldList, changeType func(string) st
 		if changeType != nil {
 			field.Type = formatType(field.Type, changeType)
 		}
+		field.Type = trimPkg(field.Type)
 
 		out = append(out, field)
 	}

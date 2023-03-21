@@ -29,6 +29,8 @@ var config = struct {
 	IgnoreUnexportStruct bool              // 忽略未导出结构体
 	IgnoreUnexportMethod bool              // 忽略未导出的成员函数
 	IgnoreEmptyStruct    bool              // 忽略没有函数的结构体
+	IgnoreMethods        []string          // 忽略函数集合
+	TrimPackage          []string          // 忽略引入包
 	ToPkg                string            // 生成的package名
 	Output               string            // 生成的文件名
 	IfaceSufix           string            // 生成接口名称的的后缀
@@ -49,7 +51,7 @@ var config = struct {
 }
 
 // Version generate tool version
-var Version string = "0.0.4"
+var Version string = "0.0.6"
 
 // Flags generate tool flags
 func Flags(set *pflag.FlagSet) {
@@ -59,6 +61,8 @@ func Flags(set *pflag.FlagSet) {
 	set.BoolVar(&config.IgnoreUnexportStruct, "ignore-unexport-struct", config.IgnoreUnexportStruct, "is ignore unexport struct")
 	set.BoolVar(&config.IgnoreUnexportMethod, "ignore-unexport-method", config.IgnoreUnexportMethod, "is ignore unexport method")
 	set.BoolVar(&config.IgnoreEmptyStruct, "ignore-empty-struct", config.IgnoreEmptyStruct, "ignore empty struct(not has funcions)")
+	set.StringSliceVarP(&config.IgnoreMethods, "ignore-methods", "d", config.IgnoreMethods, "ignore methods")
+	set.StringSliceVar(&config.TrimPackage, "trim-package", config.TrimPackage, "trim package")
 	set.StringVarP(&config.Output, "output", "o", config.Output, "output file name; default stdout")
 	set.StringVar(&config.ToPkg, "to", config.ToPkg, "generated package name")
 	set.StringVarP(&config.IfaceSufix, "suffix", "s", config.IfaceSufix, "add interface name suffix")
@@ -134,9 +138,22 @@ func RunCommand(cmd *cobra.Command, args []string) {
 	g.Printf("package %s", config.ToPkg)
 	g.Printf("\n")
 	g.Println("import (")
+	trimPackageNames := make([]string, 0, 8)
 	for _, v := range pkg.Package().Imports {
+		trimPkg := false
+		for _, tpkg := range config.TrimPackage {
+			if v.PkgPath == tpkg || tpkg == v.Name {
+				trimPkg = true
+				trimPackageNames = append(trimPackageNames, v.Name)
+				break
+			}
+		}
+		if trimPkg {
+			continue
+		}
 		g.Printf("%s \"%s\"\n", v.Name, v.PkgPath)
 	}
+	config.TrimPackage = trimPackageNames
 	if len(dstPkg) > 0 {
 		g.Printf("%s \"%s\"\n", fromPkg, pkg.Package().PkgPath)
 	}
@@ -310,6 +327,25 @@ func Stub%[1]sMock(ctl *gomock.Controller) (mock *Mock%[1]s%[2]s,st *%[3]s) {
 		"write stub file")
 }
 
+func trimPkg(typ string) string {
+	for _, v := range config.TrimPackage {
+		if strings.Contains(typ, v+".") {
+			return strings.Replace(typ, v+".", "", 1)
+		}
+	}
+	return typ
+}
+
+func ignoreMethod(method string) bool {
+	// method = strings.ToLower(method)
+	for _, v := range config.IgnoreMethods {
+		if v == method {
+			return true
+		}
+	}
+	return false
+}
+
 func GetIfaceName(name string) string {
 	if nm, ok := config.IFaceMap[name]; ok {
 		return nm
@@ -339,7 +375,14 @@ func sortMethod(in []*StructMethod) []*StructMethod {
 		}
 		return in[i].fileName < in[j].fileName
 	})
-	return in
+	dst := make([]*StructMethod, 0, len(in))
+	for _, v := range in {
+		if ignoreMethod(v.Name) {
+			continue
+		}
+		dst = append(dst, v)
+	}
+	return dst
 }
 
 // IsGenerateStruct 是否生成结构体
