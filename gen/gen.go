@@ -88,9 +88,9 @@ func OptionGoimportsFormtat(in []byte) ([]byte, error) {
 		Fragment:  true,
 		Comments:  true,
 	}
-	data ,err :=  imports.Process("", in, opts)
+	data, err := imports.Process("", in, opts)
 	if err == nil {
-		return data,nil
+		return data, nil
 	}
 	return format.Source(in)
 }

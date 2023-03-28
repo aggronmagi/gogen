@@ -35,6 +35,7 @@ var config = struct {
 	Output               string            // 生成的文件名
 	IfaceSufix           string            // 生成接口名称的的后缀
 	IfacePrefix          string            // 生成接口名称的的前缀
+	OtherStructs         []string          // 其他包引入的结构体接口
 	IFaceMap             map[string]string // 接口名称映射
 	Mock                 bool              // 为结构体生成mock
 	MergeUnexportIFace   bool              // 将未导出的结构体接口合并
@@ -51,7 +52,7 @@ var config = struct {
 }
 
 // Version generate tool version
-var Version string = "0.0.6"
+var Version string = "0.0.7"
 
 // Flags generate tool flags
 func Flags(set *pflag.FlagSet) {
@@ -71,6 +72,7 @@ func Flags(set *pflag.FlagSet) {
 	set.BoolVar(&config.Mock, "mock", config.Mock, "generate struct mock functions")
 	set.BoolVar(&config.MergeUnexportIFace, "merge", config.MergeUnexportIFace, "merge unexport struct method to interface")
 	set.BoolVar(&config.SortByPos, "sort-by-pos", config.SortByPos, "sort method by code pos")
+	set.StringSliceVar(&config.OtherStructs, "merge-other", config.OtherStructs, "merge other package struct or struct name")
 }
 
 // RunCommand run generate command
@@ -164,8 +166,11 @@ func RunCommand(cmd *cobra.Command, args []string) {
 	for _, key := range keys {
 		info := data[key]
 		if config.MergeUnexportIFace && !token.IsExported(info.Typ) && info.compositeOnly {
+			//log.Println("ignore ", info.Typ)
 			continue
 		}
+		// log.Printf("key %s \n", key)
+		// util.Dump(info, "info")
 		info.Methods = sortMethod(info.Methods)
 		g.PrintDoc(info.Doc)
 		g.Printf("type %s interface{\n", GetIfaceName(info.Typ))

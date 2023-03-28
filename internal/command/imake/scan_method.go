@@ -143,12 +143,47 @@ func ParsePackages(pkg *goparse.Package,
 					case *ast.SelectorExpr:
 						// // FIXME: composite other package
 						// util.Dump(rv.Sel.Obj, "**field.select.Obj")
+						if ident, ok := rv.X.(*ast.Ident); ok {
+							typ := ident.String() + "." + rv.Sel.String()
+							find := false
+							for _, v := range config.OtherStructs {
+								if v == typ {
+									find = true
+									break
+								}
+							}
+							if find {
+								st.Composites = append(st.Composites, &CompositeStructInfo{
+									Typ:      typ,
+									IsStruct: true,
+								})
+							}
+						}
 					}
 				case *ast.SelectorExpr:
-					// FIXME: composite other package
-					// fmt.Println("-- ---->", fv.Sel.String(), fv.X.(*ast.Ident).String())
-					// util.Dump(fv.Sel.Obj, "field.select.Obj")
-					// util.Dump(fv.X.(*ast.Ident).Obj, "field.select.X.Obj")
+					// // FIXME: composite other package
+					// log.Printf("-- ----> %s - %s\n", fv.Sel.String(), fv.X.(*ast.Ident).String())
+					// util.Dump(fv.Sel.Obj, "field.select.Obj ")
+					// util.Dump(fv.X.(*ast.Ident).Obj, "field.X.Obj ")
+					// util.Dump(fv.X, "field.X ")
+					if ident, ok := fv.X.(*ast.Ident); ok {
+						typ := ident.String() + "." + fv.Sel.String()
+						find := false
+						for _, v := range config.OtherStructs {
+							if v == typ {
+								find = true
+								break
+							}
+						}
+						//log.Println("find", find, typ, config.OtherStructs)
+						if find {
+							st.Composites = append(st.Composites, &CompositeStructInfo{
+								Typ:      typ,
+								IsStruct: true,
+							})
+						}
+					}
+					//ident = fv.Sel
 				}
 				if ident == nil {
 					continue
@@ -167,10 +202,11 @@ func ParsePackages(pkg *goparse.Package,
 				if td, ok := ident.Obj.Decl.(*ast.TypeSpec); ok {
 					switch tvv := td.Type.(type) {
 					case *ast.StructType:
+						//util.Dump(tvv, "ident.Obj.Struct.Type")
 					case *ast.InterfaceType:
 						isInterface = true
 						_ = tvv
-						// util.Dump(tvv, "ident.Obj.Interface.Type")
+						//util.Dump(tvv, "ident.Obj.Interface.Type")
 					}
 				}
 				var ct string

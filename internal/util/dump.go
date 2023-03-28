@@ -108,9 +108,9 @@ func Dump(v interface{}, tips ...string) {
 		if len(dump.Out) == 0 {
 			dump.Out = "nil"
 		}
-		fmt.Printf("%s:%d:\n%s%s", frame.File, frame.Line, strings.Join(tips, "\n"), dump.Out)
+		fmt.Printf("%s:%d:\n%s = %s\n", frame.File, frame.Line, strings.Join(tips, "\n"), dump.Out)
 	} else {
-		fmt.Printf("%s", dump.Out)
+		fmt.Printf("%s\n", dump.Out)
 	}
 
 }
