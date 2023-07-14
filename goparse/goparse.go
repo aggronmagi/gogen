@@ -38,6 +38,30 @@ func ParsePackage(patterns []string, tags ...string) (pkg *Package, err error) {
 	return
 }
 
+// ParsePackage parse specified packages.
+func ParseMulPackage(patterns []string, tags ...string) (pkgs []*packages.Package, err error) {
+	cfg := &packages.Config{
+		Mode:       packages.LoadSyntax,
+		Tests:      false,
+		BuildFlags: []string{fmt.Sprintf("-tags=%s", strings.Join(tags, " "))},
+	}
+	pkgs, err = packages.Load(cfg, patterns...)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (p *Package) RangeFile(f func(file *ast.File, fset *token.FileSet, cm ast.CommentMap) bool) {
+	for _, file := range p.pkg.Syntax {
+		cm := ast.NewCommentMap(p.pkg.Fset, file, file.Comments)
+		if f(file, p.pkg.Fset, cm) == false {
+			break
+		}
+	}
+}
+
 // GenDecl range all GenDecl
 func (p *Package) GenDecl(f func(decl *ast.GenDecl, cm ast.CommentMap) bool) {
 	for _, file := range p.pkg.Syntax {
