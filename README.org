@@ -10,7 +10,6 @@ golang generate tool collection and merge.
 | import   |            | import const type and value from another package.                  |
 | option   | [[https://github.com/timestee/optiongen][optiongen]]  | generate generate go Struct option for test, mock or more flexible |
 | imake    | [[https://github.com/vburenin/ifacemaker][ifacemaker]] | generate interface from go struct define. mock stub supported      |
-| logx     |            | replace logrus to zap logger.or fix zap logger msg                 |
 
 
 
@@ -404,21 +403,6 @@ gogen imake "github.com/go-redis/redis/v8" --to redismock -m ".*Cmd$" -o samples
 #+end_src
 [[./samples/redismock/][redismock]] generate code sample 
 
-** logx
-#+begin_example
-fix zap logger or replace logrus to zap
-
-Usage:
-  gogen logx [flags] packages...
-
-Flags:
-  -p, --dst-package string   replace logx package (default "xxxx.com/xx/logx")
-  -h, --help                 help for logx
-  -r, --replace              replace logx action,if not set, fix zap logger
-      --stdout               output to stdout
-      --tags strings         comma-separated list of build tags to apply
-  -v, --version              version for logx
-#+end_example
 ** TODO-LIST
 
 
