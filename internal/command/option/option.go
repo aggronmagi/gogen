@@ -19,8 +19,10 @@ var config = struct {
 	FuncWithOptionName bool
 	GenAppend          bool
 	Output             string
+	Template           string
 }{
 	AllExport: true,
+	Template:  "option",
 }
 
 func FlagSet(set *pflag.FlagSet) {
@@ -47,10 +49,12 @@ func FlagSet(set *pflag.FlagSet) {
 	set.StringVarP(&config.Output, "output", "o", config.Output,
 		"decice output file name.",
 	)
+	// 生成模板
+	set.StringVarP(&config.Template, "template", "t", config.Template, "generate template, default use option")
 }
 
 // Version option command version
-var Version string = "0.0.3"
+var Version string = "0.0.4"
 
 func RunCommand(cmd *cobra.Command, args ...string) {
 	// parse file from env, which was seted by go generate tool.
@@ -256,7 +260,7 @@ func convertCompositeLitBody(pkg *goparse.Package, cm ast.CommentMap, val *ast.C
 			if elt.Name == "true" || elt.Name == "false" {
 				data = append(data, elt.Name)
 			} else {
-				err = fmt.Errorf("[%d] not support. %s", elt.Name)
+				err = fmt.Errorf("[%d] not support. %s", k, elt.Name)
 				return
 			}
 			foreachComment(elt, func(g *ast.CommentGroup) {
@@ -299,6 +303,7 @@ type optionField struct {
 	Name      string
 	Type      string
 	Body      string
+	// GetMethod string
 
 	Export bool
 }
@@ -323,21 +328,22 @@ func (field *optionField) fix() {
 	}
 }
 
-func (field *optionField) GenFuncName(st *optionStruct) string {
+func (field *optionField) GenFuncName(optName string) string {
 	suffix := strings.Title(field.Name)
 	if config.FuncWithOptionName {
-		suffix = strings.Title(st.OptionName) + suffix
+		suffix = strings.Title(optName) + suffix
 	}
+	// log.Println("GenFuncName:", config.FuncWithOptionName, fmt.Sprintf("[%s]", optName), "suffix => ", suffix)
 	if !field.Export {
 		return "with" + suffix
 	}
 	return "With" + suffix
 }
 
-func (field *optionField) AppendFuncName(st *optionStruct) string {
+func (field *optionField) AppendFuncName(optName string) string {
 	suffix := strings.Title(field.Name)
 	if config.FuncWithOptionName {
-		suffix = strings.Title(st.OptionName) + suffix
+		suffix = strings.Title(optName) + suffix
 	}
 	if !field.Export {
 		return "append" + suffix
@@ -364,8 +370,8 @@ type optionStruct struct {
 }
 
 func (opt *optionStruct) fixStruct() {
-	// Option Name fix
 	if config.OptionsName != "" {
+		// Option Name fix
 		opt.Name = strings.Title(config.OptionsName)
 		if strings.HasSuffix(opt.Name, "Option") {
 			opt.OptionName = opt.Name
@@ -390,6 +396,7 @@ func (opt *optionStruct) fixStruct() {
 			// opt.Name += "Options"
 		}
 	}
+
 	for _, f := range opt.Fields {
 		f.fix()
 	}
