@@ -1,6 +1,7 @@
 package cfggen
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -17,6 +18,16 @@ func init() {
 		return
 	}
 
+	UseFuncMap["Doc"] = func(doc string, comments []string) string {
+		if len(doc) > 0 {
+			return strings.TrimSpace(doc)
+		}
+		if len(comments) > 0 {
+			return strings.TrimSpace(comments[0])
+		}
+		return ""
+	}
+
 	UseFuncMap["ToLower"] = func(in string) string {
 		if config.Lowercase {
 			return strings.ToLower(in)
@@ -24,6 +35,12 @@ func init() {
 		return in
 	}
 	//UseFuncMap["RegName"] = GetRegName
+	UseFuncMap["Tag"] = func(f string, v ...string) string {
+		for k := range v {
+			v[k] = strings.ToLower(v[k])
+		}
+		return fmt.Sprintf("`%s:\"%s\"`", strings.ToLower(f), strings.Join(v, ","))
+	}
 }
 
 func CamelCase(s string) string {
