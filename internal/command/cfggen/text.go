@@ -55,7 +55,7 @@ func (cfg *{{.Name}}) SetDefaultValue(cc configcentra.ConfigCentra) {
 		return 
 	}
 {{- range $i,$f := .Fields}}
-    cc.SetDefault(cfg.prefix + ".{{ToLower $f.Name}}", "{{$f.Doc}}", cfg.{{$f.Name}}) {{- end }} 
+    cc.SetDefault(cfg.prefix + ".{{ToLower $f.Name}}", "{{OneRow $f.Doc}}", cfg.{{$f.Name}}) {{- end }} 
 }
 
 // impl configcentra.ConfigValue

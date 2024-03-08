@@ -12,6 +12,14 @@ func init() {
 	UseFuncMap["CamelCase"] = CamelCase
 	UseFuncMap["Comment"] = func(f *optionField) (out string) {
 		out = f.Doc()
+		if strings.Contains(out, "\n") {
+			list := strings.Split(out, "\n")
+			out = ""
+			for _, v := range list {
+				out += "// " + v + "\n"
+			}
+			return
+		}
 		if len(out) > 0 {
 			return "// " + out + "\n"
 		}
@@ -26,6 +34,13 @@ func init() {
 			return strings.TrimSpace(comments[0])
 		}
 		return ""
+	}
+
+	UseFuncMap["OneRow"] = func(in string) string {
+		if strings.Contains(in, "\n") {
+			return strings.Replace(in, "\n", " ", -1)
+		}
+		return in
 	}
 
 	UseFuncMap["ToLower"] = func(in string) string {
